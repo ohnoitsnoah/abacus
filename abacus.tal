@@ -2,13 +2,13 @@
 
 |00 @System     &vector $2 &wst     $1 &rst  $1 &eaddr  $2 &ecode  $1 &pad  $1 &r   $2 &g  $2 &b  $2 &debug  $1 &halt  $1
 |10 @Console    &vector $2 &read    $1 &pad  $5 &write  $1 &error $1
-|20 @Screen     &vector $2 &width   $2 &height  $2 &auto  $1 &pad  $1 &x  $2 &y  $2 &addr  $2 &addr  $2 &pixel  $1 &sprite  $1
+|20 @Screen     &vector $2 &width   $2 &height  $2 &auto  $1 &pad  $1 &x  $2 &y  $2 &addr  $2 &pixel  $1 &sprite  $1
 |80 @Controller &vector $2 &button  $1 &key  $1
 |90 @Mouse      &vector $2 &x  $2 &y  $2 &state  $1 &pad  $3 &scrollx $2 &scrolly $2
 
 ( variables )
 |0000
-  @abacus-state ( 10 rods, 10 beads ea/rod)
+  @abacus-state ( 10 rods, 10 beads ea/rod )
     $0a ( rod 0 - ones )
     $0a ( rod 1 - tens )
     $0a ( rod 2 - hundreds )
@@ -165,7 +165,7 @@ RTN
 
 @draw-rod
   ( rod number in stack )
-  DUP #0024 MUL2 #005 ADD2 .Screen/x DEO2
+  DUP #0024 MUL2 #0052 ADD2 .Screen/x DEO2
   
   ( get bread count for selected rod )
   DUP ;abacus-state ADD2 LDA
@@ -274,4 +274,8 @@ RTN
 
 @font
   ( 8x8 font for digits 0-9 )
-  3c66 6e76
+  3c66 6e76 6666 663c 1818 1818 1818 187e
+  3c66 0606 0c18 3060 7e00 3c66 061c 0606 663c
+  0c1c 3c6c ccfe 0c0c 0c00 7e60 607c 0606 663c
+  3c66 607c 6666 663c 7e06 060c 1830 3000
+  3c66 663c 6666 663c 3c66 663e 0606 663c
