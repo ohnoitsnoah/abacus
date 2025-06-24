@@ -83,4 +83,195 @@ RTN
     ;draw-abacus JSR2
     ;calculate-value JSR2
     ;draw-value JSR2
-BRK
+  BRK
+
+@handle-click
+  .mouse-x LDZ2 #0040 LTH2 ,&end JCN ( too far left )
+  .mouse-x LDZ2 #0280 GTH2 ,&end JCN ( too far right )
+  .mouse-y LDZ2 #0060 LTH2 ,&end JCN ( too high )
+  .mouse-y LDZ2 #01c0 GTH2 ,&end JCN ( too low )
+
+  ( calculate which rod was clicked )
+  .mouse-x LDZ2 #0040 SUB2 #0024 DIV2 NIP
+  DUP #0a LTH ,&valid-rod JCN
+  POP ,&end JMP
+
+  &valid-rod
+  ( rod is valid, now calculate which bead )
+    DUP ;abacus-state ADD2 LDA
+    .mouse-y LDZ2 #0080 LTH2 ,&upper-half JCN
+
+    ( lower half - move beads up )
+    INC #0a MIN
+    ,&update-rod JMP
+
+    &upper-half
+    ( upper half - move beads down )
+    #01 SUB #00 MAX
+
+    &update-rod
+    OVER ;abacus-state ADD2 STA
+    POP
+
+
+  &end
+RTN
+
+
+@draw-abacus
+  ( clear screen )
+  #40 .Screen/auto DEO
+  #0000 .Screen/addr DEO2
+  #00 .Screen/pixel DEO
+
+  ( draw frame )
+  ;draw-frame JSR2
+
+  ( draw rods )
+  #00 #0a
+  &rod-loop
+    DUP ;draw-rod JSR2
+    INC GTHk ,&rod-loop JCN
+  POP2
+RTN
+
+@draw-frame
+  ( draw top bar )
+  #0040 .Screen/x DEO2
+  #0060 .Screen/y DEO2
+  #01 .Screen/pixel DEO
+  #0200 .Screen/x DEO2
+  #01 .Screen/pixel DEO
+
+  ( draw bottom bar )
+  #0040 .Screen/x DEO2
+  #0140 .Screen/y DEO2
+  #01 .Screen/pixel DEO
+  #0200 .Screen/x DEO2
+  #01 .Screen/pixel DEO
+
+  ( draw vertical separators )
+  #00 #0b
+  &sep-loop
+    DUP #0024 MUL2 #0040 ADD2 .Screen/x DEO2  
+    #0060 .Screen/y DEO2
+    #01 .Screen/pixel DEO
+    #0140 .Screen/y DEO2
+    #01 .Screen/pixel DEO
+    INC GTHk ,&sep-loop JCN
+  POP2
+RTN
+
+
+@draw-rod
+  ( rod number in stack )
+  DUP #0024 MUL2 #005 ADD2 .Screen/x DEO2
+  
+  ( get bread count for selected rod )
+  DUP ;abacus-state ADD2 LDA
+
+  ( draw beads at top )
+  #0070 .Screen/y DEO2
+  #00 OVER
+  &top-loop
+    #02 .Screen/pixel DEO
+    .Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+    INC GTHk ,&top-loop JCN
+  POP2
+
+  ( draw beads at bottom )
+  #0138 .Screen/y DEO2
+  #0a OVER SUB #00
+  &botton-loop
+    #03 .Screen/pixel DEO
+    .Screen/y DEI2 #0008 SUB2 .Screen/y DEO2
+    INC GTHk ,&botton-loop JCN
+  POP2
+
+  POP
+RTN
+
+
+@calculate-value
+  #00000000 .current-value STZ2
+
+
+  ( multiplier starts at 1 )
+  #00000001
+
+  #00 #0a
+  &loop
+    ( get bead count for current rod )
+    DUP ;abacus-state ADD2 LDA #000000 SWP
+
+    ( multiply by multiplier )
+    ROT2 MUL2
+
+    ( add to total )
+    .current-value LDZ2 ADD2 .current-value STZ2
+
+    ( increment multiplier )
+    ROT2 #0000000a MUL2
+
+    ROT INC ROT ROT
+    GTHk ,&loop JCN
+  POP2 POP2
+RTN
+
+
+@draw-value
+  ( draw value on bottom of screen )
+  #0040 .Screen/x DE02
+  #0160 .Screen/y DE02
+
+  ( clear previous value )
+  .current-value LDZ2
+  ;draw-number JSR2
+RTN
+
+@draw-number
+  ( draw a 32-bit number )
+  DUP2 #00000000 EQU ,&end JCN ( zero )
+
+  ( extract digits )
+  #00 ( digit count )
+
+  &extract-loop
+    ROT2 DUP2 #00000000 EQU2 ,&extract-done JCN
+    #0000000a DIV2k MUL2 SUB2 ( remainder )
+    SWP POP #30 ADD ( convert to ASCII )
+    ROT INC ROT ROT ( inc digit count )
+    SWP2 #0000000a DIV2 SWP2 ( divide by 10 )
+    ,&extract-loop JCN
+
+  &extract-done
+    POP2
+
+
+    ( draw digits )
+    &draw-loop
+      DUP #00 EQU ,&draw-done JCN
+      ;draw-char JSR2
+      .Screen/x DEI #0008 ADD2 .Screen/x DEO2
+      #01 SUB
+      ,&draw-loop JMP
+
+    &draw-done
+      POP
+    RTN
+  
+  &zero
+    POP2
+    #30 ;draw-char JSR2
+RTN
+
+@draw-char
+  ( draw a single character at current screen position )
+  #20 SUB #0008 MUL2 ;font ADD2 .Screen/addr DEO2
+  #01 .Screen/pixel DEO
+RTN
+
+
+@font
+  ( 8x8 font for digits 0-9 )
+  3c66 6e76
