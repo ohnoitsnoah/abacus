@@ -1,0 +1,86 @@
+( abacus.tal - a neat little abacus )
+
+|00 @System     &vector $2 &wst     $1 &rst  $1 &eaddr  $2 &ecode  $1 &pad  $1 &r   $2 &g  $2 &b  $2 &debug  $1 &halt  $1
+|10 @Console    &vector $2 &read    $1 &pad  $5 &write  $1 &error $1
+|20 @Screen     &vector $2 &width   $2 &height  $2 &auto  $1 &pad  $1 &x  $2 &y  $2 &addr  $2 &addr  $2 &pixel  $1 &sprite  $1
+|80 @Controller &vector $2 &button  $1 &key  $1
+|90 @Mouse      &vector $2 &x  $2 &y  $2 &state  $1 &pad  $3 &scrollx $2 &scrolly $2
+
+( variables )
+|0000
+  @abacus-state ( 10 rods, 10 beads ea/rod)
+    $0a ( rod 0 - ones )
+    $0a ( rod 1 - tens )
+    $0a ( rod 2 - hundreds )
+    $0a ( rod 3 - thousands )
+    $0a ( rod 4 - ten-thousands )
+    $0a ( rod 5 - hundred-thousands )
+    $0a ( rod 6 - millions )
+    $0a ( rod 7 - ten-millions )
+    $0a ( rod 8 - hundred-millions )
+    $0a ( rod 9 - billions )
+@mouse-x $2
+@mouse-y $2
+@current-value $4
+
+( program )
+|0100
+  ( screen setup )
+  #2ce0 .Screen/width DE02
+  #01e0 .Screen/height DE02
+
+  ( set colors )
+  #0124 .System/r DE02
+  #0135 .System/g DE02
+  #0246 .System/b DE02
+
+  ( set vectors )
+  ;on-mouse .Mouse/vector DE02
+  ;on-key .Controller/vector DE02
+
+  ( init abacus )
+  ;init-abacus JSR2
+
+  ( draw inital state )
+  ;draw-abacus JSR2
+
+BRK
+
+@init-abacus
+  ( sets all rods to 0 beads at top )
+  #00 #0a
+  &loop
+    DUP #00 ;abacus-state ADD2 STA
+    INC GTHk ,&loop JCN
+  POP2
+RTN
+
+
+@on-mouse
+  .Mouse/x DEI2 .mouse-x STZ2
+  .Mouse/y DEI2 .mouse-y STZ2
+
+  .Mouse/state DEI #01 AND
+  ,&click JCN
+  BRK
+
+  &click
+    ;handle-click JSR2
+    ;draw-abacus JSR2
+    ;calculate-value JSR2
+    ;draw-value JSR2
+  BRK
+
+@on-key
+  .Controller/key DEI
+  DUP #20 EQU ,&reset JCN ( space to reset )
+  DUP #0d EQU ,&reset JCN ( enter to reset )
+  POP BRK
+
+  &reset
+    POP
+    ;init-abacus JSR2
+    ;draw-abacus JSR2
+    ;calculate-value JSR2
+    ;draw-value JSR2
+BRK
